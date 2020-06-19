@@ -181,14 +181,116 @@ summary(modelo)
 
 #### MODELO DE REGRESION LOGISTICA ####
 
-# https://www.kaggle.com/ludobenistant/hr-analytics
+datos <- read.csv("HumanResourcesAnalytics.csv",T)
+muestra <- dim(datos)[1]
+datos <- datos[sample(muestra,100,replace=TRUE),]
+class(datos)
+str(datos)
+head(datos)
+View(datos)
+colnames(datos)=c("nivel_satisfaccion","ultima_evaluacion","numero_proyectos","promedio_horas_mensuales","antiguedad"
+                 ,"accidente","abandona","promocionado","departamento","salario")
+
+help("sample")
+# sample toma una muestra del tamaño especificado de los elementos de x usando con o sin reemplazo
+
+datos.modelo <- subset(datos,select=c(abandona,nivel_satisfaccion,ultima_evaluacion))
+datos.modelo$abandona <- factor(datos.modelo$abandona)
+head(datos.modelo)
+plot(datos.modelo$nivel_satisfaccion,datos.modelo$abandona)
+
+help("subset")
+
+table(datos.modelo$abandona)
+# 0  1 
+# 79 21 
+
+summary(datos.modelo$nivel_satisfaccion)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.0900  0.4825  0.6550  0.6318  0.8400  1.0000 
+summary(datos.modelo$ultima_evaluacion)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.3800  0.5900  0.7400  0.7349  0.8625  1.0000 
+
+
+
+#### FUNCION GLM ####
+
+modelo.logit <- glm(abandona ~ultima_evaluacion + nivel_satisfaccion, data=datos.modelo, family="binomial")
+
+# La principal diferencia con la función lm para ajustar modelos lineales es que le tenemos que
+# proporcionar la familia de la distribución. En nuestro caso, como es una
+# variable dicotómica, la familia es la binomial
+
+summary(modelo.logit)
+
+# Call:
+#   glm(formula = abandona ~ ultima_evaluacion + nivel_satisfaccion, 
+#       family = "binomial", data = datos.modelo)
 # 
-# We can't find that page: DATA NO DISPONIBLE
+# Deviance Residuals: 
+#   Min       1Q   Median       3Q      Max  
+# -1.2259  -0.6786  -0.5355  -0.3805   2.1015  
+# 
+# Coefficients:
+#   Estimate Std. Error z value Pr(>|z|)
+# (Intercept)          -0.456      1.252  -0.364  0.71581
+# ultima_evaluacion     1.225      1.555   0.788  0.43069
+# nivel_satisfaccion   -3.036      1.052  -2.887  0.00389
+# 
+# (Intercept)          
+# ultima_evaluacion    
+# nivel_satisfaccion **
+#   ---
+#   Signif. codes:  
+#   0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+# 
+# (Dispersion parameter for binomial family taken to be 1)
+# 
+# Null deviance: 102.791  on 99  degrees of freedom
+# Residual deviance:  93.446  on 97  degrees of freedom
+# AIC: 99.446
+# 
+# Number of Fisher Scoring iterations: 4
 
 
+# La variable ultima_evaluacion no es significativa en
+# el modelo ,el p-valor debe ser mucho mayor de 0.05, mientras que la
+# variable nivel_satisfaccion es moderadamente significativa si es que
+# su p-valor entre 0.01 y 0.05.
+
+#### Ejemplo Modelo de Regresion Logistica ####
+
+exp(coefficients(modelo.logit))
+# (Intercept)  ultima_evaluacion 
+# 0.63384548         3.40555702 
+# nivel_satisfaccion 
+# 0.04803069
+
+log.odds <- predict(modelo.logit, data.frame(nivel_satisfaccion=0.6,
+                                             ultima_evaluacion=0.75))
+log.odds
+#         1 
+# -1.358443 
+
+# La probabilidad de abandonar la empresa sería:
+exp(log.odds)/(1-exp(log.odds))
+#        1 
+# 0.3460051 
 
 
+q <- seq(from=0, to=20,by=0.1)
+y <- 500 + 0.4*(q-10)^3
+noise <- rnorm (length(q), mean=10, sd=80)
+noisy.y <- y+noise
+plot(q, noisy.y, col='deepskyblue4',xlab='q' , main='Observeddata')
+lines(q,y,col='firebrick1',lwd=3)
+model <- lm(noisy.y ~ poly(q,3))
 
+confint(model, level=0.95)
 
-
-
+# 2.5 %     97.5 %
+# Intercept)     507.2712  529.75856
+# poly(q, 3)1   1825.4506 2144.26438
+# poly(q, 3)2   -238.6370   80.17677
+# poly(q, 3)3    721.5212 1040.33495
